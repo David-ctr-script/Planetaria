@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Para mi Luna 🌙</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+        :root {
+            --gold: #ffd700;
+            --gold-light: #fff0a0;
+            --purple-deep: #0d0020;
+            --purple-mid: #1a0040;
+            --pink-glow: #ff4daa;
+            --cyan-glow: #00eeff;
+            --green-ok: #39ff87;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body, html { 
+            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; 
+            background-color: #010103; 
+            font-family: 'Space Mono', monospace; 
+            color: white; 
+            touch-action: none; 
+            user-select: none; 
+        }
+        canvas { display: block; image-rendering: pixelated; }
+
+        /* ───── OVERLAY BASE ───── */
+        .overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            background: rgba(3, 0, 18, 0.93);
+            z-index: 10; text-align: center; 
+            backdrop-filter: blur(6px);
+        }
+        .hidden { display: none !important; }
+
+        /* ───── SCANLINE TEXTURE ───── */
+        .overlay::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.012) 2px,
+                rgba(255,255,255,0.012) 4px
+            );
+            pointer-events: none;
+            z-index: 0;
+        }
+        .overlay > * { position: relative; z-index: 1; }
+
+        /* ───── BOTONES ───── */
+        .btn {
+            position: relative;
+            display: inline-block;
+            padding: 14px 36px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: #fff;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            margin: 8px;
+            outline: none;
+            transition: color 0.2s;
+        }
+
+        /* Marco con esquinas cortadas */
+        .btn::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: linear-gradient(135deg, 
+                rgba(255,215,0,0.12) 0%, 
+                rgba(255,77,170,0.08) 100%
+            );
+            clip-path: polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%);
+            border: 1.5px solid rgba(255,215,0,0.5);
+            transition: background 0.25s, border-color 0.25s;
+        }
+
+        /* Brillo izquierdo */
+        .btn::after {
+            content: '';
+            position: absolute;
+            left: 0; top: 20%; bottom: 20%; width: 3px;
+            background: var(--gold);
+            clip-path: polygon(0 0, 100% 20%, 100% 80%, 0 100%);
+            opacity: 0.7;
+            transition: opacity 0.2s, height 0.2s;
+        }
+
+        .btn:hover::before {
+            background: linear-gradient(135deg, 
+                rgba(255,215,0,0.28) 0%, 
+                rgba(255,77,170,0.2) 100%
+            );
+            border-color: var(--gold);
+        }
+        .btn:hover { color: var(--gold-light); }
+        .btn:hover::after { opacity: 1; }
+
+        .btn:active { transform: scale(0.97); }
+
+        /* Variante primaria (glow más intenso) */
+        .btn-primary::before {
+            background: linear-gradient(135deg, 
+                rgba(255,215,0,0.22) 0%, 
+                rgba(255,150,0,0.15) 100%
+            );
+            border-color: var(--gold);
+            box-shadow: 0 0 20px rgba(255,215,0,0.25), inset 0 0 20px rgba(255,215,0,0.08);
+        }
+        .btn-primary { color: var(--gold-light); text-shadow: 0 0 12px var(--gold); }
+
+        /* Variante amor (rosa) */
+        .btn-love::before {
+            background: linear-gradient(135deg, 
+                rgba(255,77,170,0.25) 0%, 
+                rgba(180,0,100,0.15) 100%
+            );
+            border-color: var(--pink-glow);
+            box-shadow: 0 0 20px rgba(255,77,170,0.3);
+        }
+        .btn-love::after { background: var(--pink-glow); }
+        .btn-love { color: #ffbde2; text-shadow: 0 0 12px var(--pink-glow); }
+
+        /* Variante back (dim) */
+        .btn-back::before {
+            border-color: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.04);
+        }
+        .btn-back::after { background: rgba(255,255,255,0.4); opacity: 0.3; }
+        .btn-back { color: rgba(255,255,255,0.55); font-size: 0.75rem; }
+        .btn-back:hover { color: #fff; }
+        .btn-back:hover::before { border-color: rgba(255,255,255,0.5); }
+
+        /* ───── TÍTULO MENÚ ───── */
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(2rem, 7vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: 6px;
+            margin-bottom: 8px;
+            background: linear-gradient(180deg, #fff 0%, var(--gold) 60%, #ff9900 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 20px rgba(255,200,0,0.5));
+        }
+        .subtitle {
+            font-size: 0.75rem;
+            letter-spacing: 5px;
+            color: rgba(255,255,255,0.35);
+            margin-bottom: 40px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* ───── MAPA DE NIVELES ───── */
+        #ui-levels h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 5px;
+            color: rgba(255,255,255,0.45);
+            margin-bottom: 28px;
+        }
+
+        .level-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 16px; 
+            margin: 0 0 28px 0; 
+        }
+
+        .level-card { 
+            width: 130px;
+            text-align: center;
+            cursor: pointer;
+            padding: 18px 12px 14px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            clip-path: polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%);
+            transition: transform 0.2s, border-color 0.2s, background 0.2s;
+            position: relative;
+        }
+        .level-card:hover:not(.locked) { 
+            transform: translateY(-4px); 
+            border-color: rgba(255,215,0,0.5);
+            background: rgba(255,215,0,0.07);
+        }
+        .level-card.locked { opacity: 0.28; cursor: not-allowed; }
+
+        /* Nombre del planeta con fuente especial */
+        .level-card span {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 3px;
+            color: rgba(255,255,255,0.7);
+        }
+
+        /* ───── PLANETAS ───── */
+        .planet-wrap {
+            width: 72px; height: 72px;
+            margin: 0 auto 12px;
+            position: relative;
+        }
+        .planet-canvas {
+            width: 72px; height: 72px;
+            border-radius: 50%;
+        }
+
+        /* ───── POESÍA ───── */
+        #poetry-text {
+            padding: 36px;
+            line-height: 1.9;
+            max-width: 420px;
+            font-size: 1rem;
+            color: rgba(255,255,255,0.85);
+            border-left: 2px solid var(--gold);
+            text-align: left;
+            font-style: italic;
+            position: relative;
+        }
+        #poetry-text::before {
+            content: '"';
+            font-size: 5rem;
+            color: var(--gold);
+            opacity: 0.2;
+            position: absolute;
+            top: 0; left: 10px;
+            line-height: 1;
+            font-family: serif;
+        }
+
+        /* ───── WIN ───── */
+        #win-title { 
+            font-family: 'Orbitron', sans-serif;
+            color: var(--green-ok); 
+            font-size: clamp(1.5rem, 5vw, 2.2rem); 
+            letter-spacing: 4px;
+            text-shadow: 0 0 20px var(--green-ok); 
+            margin-bottom: 12px;
+        }
+        #win-msg { 
+            font-size: 1.05rem; 
+            margin: 20px; 
+            line-height: 1.6; 
+            color: rgba(255,255,255,0.7); 
+        }
+
+        /* ───── MENSAJE ESPECIAL ───── */
+        #special-win {
+            max-width: 88%;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #ffdd80;
+            text-shadow: 0 0 10px rgba(255,215,0,0.4);
+            white-space: pre-line;
+            font-family: 'Space Mono', monospace;
+            letter-spacing: 0.5px;
+            border-top: 1px solid rgba(255,215,0,0.2);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            padding: 28px 16px;
+            margin: 12px;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 26px;
+            animation: heartFloat 2.8s infinite ease-in-out;
+            filter: drop-shadow(0 0 10px rgba(255,50,100,0.8));
+        }
+        @keyframes heartFloat {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.8; }
+            50% { transform: translateY(-28px) scale(1.25); opacity: 1; }
+        }
+
+        #pixel-astro-container {
+            position: relative;
+            width: 120px;
+            height: 160px;
+            margin-bottom: 18px;
+        }
+
+        /* ───── BARRA PROGRESO ───── */
+        .progress-bar-bg {
+            fill: rgba(255,255,255,0.1);
+        }
+        .progress-bar-fill {
+            fill: var(--green-ok);
+        }
+
+        /* ───── DECORACIÓN HORIZONTAL MENU ───── */
+        .deco-line {
+            width: 160px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 0 auto 32px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- MENÚ PRINCIPAL -->
+    <div id="ui-menu" class="overlay">
+        <p class="subtitle">Te amo</p>
+        <h1 class="main-title">planetaria</h1>
+        <div class="deco-line"></div>
+        <button class="btn btn-primary" onclick="showLevels()">▶ Jugar</button>
+        <button class="btn" onclick="changeState('POETRY')">✦ POESÍA</button>
+        <button class="btn" onclick="changeState('DATA')">★♠Datos♠★</button>
+    </div>
+
+    <!-- MAPA DE NIVELES -->
+    <div id="ui-levels" class="overlay hidden">
+        <h2>PLANETAS</h2>
+        <div class="level-grid">
+            <div class="level-card" onclick="selectLevel(0)">
+                <div class="planet-wrap"><canvas class="planet-canvas" id="p0" width="72" height="72"></canvas></div>
+                <span>LUNA</span>
+            </div>
+            <div id="card-1" class="level-card locked" onclick="selectLevel(1)">
+                <div class="planet-wrap"><canvas class="planet-canvas" id="p1" width="72" height="72"></canvas></div>
+                <span>MARTE</span>
+            </div>
+            <div id="card-2" class="level-card locked" onclick="selectLevel(2)">
+                <div class="planet-wrap"><canvas class="planet-canvas" id="p2" width="72" height="72"></canvas></div>
+                <span>JÚPITER</span>
+            </div>
+            <div id="card-3" class="level-card locked" onclick="selectLevel(3)">
+                <div class="planet-wrap"><canvas class="planet-canvas" id="p3" width="72" height="72"></canvas></div>
+                <span>SATURNO</span>
+            </div>
+        </div>
+        <button onclick="showSpecialMessage()" id="special-btn" style="display:none;" class="btn btn-love">❤ VER MENSAJE ESPECIAL</button>
+        <button onclick="changeState('MENU')" class="btn btn-back" style="margin-top: 12px;">← VOLVER</button>
+    </div>
+
+    <!-- POESÍA -->
+    <div id="ui-poetry" class="overlay hidden">
+        <div id="poetry-text">
+            Cruzaría el espacio<br>
+            esquivaría cada trampa de un podrido mundo<br>
+            y viajaría hasta el último planeta<br>
+            solo por ver la sonrisa tuya.<br><br>
+            Eres un universo entero <br>
+            Perfectamente imperfecta.
+
+        </div>
+        <button onclick="changeState('MENU')" class="btn btn-back" style="margin-top:28px;">← VOLVER</button>
+    </div>
+
+    <div id="ui-data" class="overlay hidden">
+    <div class="glass-panel" style="max-width: 85%; text-align: left; font-size: 0.9rem;">
+        <h2 style="color: var(--yellow); text-align: center;">¿SABÍAS QUÉ? 🚀</h2>
+        <ul style="list-style: none; padding: 0; line-height: 1.6;">
+            <h4> </h4><li>⭐ <b>Marte</b></h4> El planeta que le sigue a la tierra, su dia dura 39min +</li> <br>
+            <h4> </h4><li>⭐ <b>Venus</b></h4> es el planeta más caliente, ¡aunque Mercurio esté más cerca del Sol!</li> <br>
+            <li>🪐 <b>Saturno</b> Planeta gaseoso, su aro es realmente asteroides dando vueltas.</li> <br>
+            <li>🌑 En la <b>Luna</b>, No es un planeta, sino un satelite natural de la tierraxd jeje.</li> <br>
+            <li>💖💕 Mi dato favorito: Eres la persona más increíble de este sistema solar.</li>
+        </ul>
+        <center><button onclick="changeState('MENU')" class="btn btn-back" style="margin-top:20px;">← VOLVER</button></center>
+    </div>
+</div>
+
+    <!-- VICTORIA NORMAL -->
+    <div id="ui-win" class="overlay hidden">
+        <h1 id="win-title">¡LO LOGRASTE!</h1>
+        <p id="win-msg">"Llegaste sana y salva mi amor 💕"</p>
+        <button onclick="showLevels()" class="btn btn-primary">VOLVER AL MAPA</button>
+    </div>
+
+    <!-- MENSAJE ESPECIAL (Saturno) -->
+    <div id="ui-special-win" class="overlay hidden">
+        <div id="pixel-astro-container">
+            <canvas id="astro-canvas" width="120" height="160" style="image-rendering: pixelated;"></canvas>
+        </div>
+        
+        <div class="heart" style="left:10%; top:30%; animation-delay:0s;">💕</div>
+        <div class="heart" style="left:18%; top:15%; animation-delay:0.4s;">💖</div>
+        <div class="heart" style="right:10%; top:38%; animation-delay:0.8s;">💕</div>
+        <div class="heart" style="right:20%; top:18%; animation-delay:1.2s;">💗</div>
+
+        <div id="special-win"></div>
+        
+        <button onclick="showLevels()" class="btn btn-back" style="margin-top:28px;">VOLVER AL MAPA</button>
+    </div>
+
+    <canvas id="game"></canvas>
+
+<script>
+    // ─────────────────────────────────────────────
+    //  DIBUJO DE PLANETAS EN CANVAS (pequeños)
+    // ─────────────────────────────────────────────
+    function drawMiniPlanet(canvasId, type) {
+        const c = document.getElementById(canvasId);
+        if (!c) return;
+        const g = c.getContext('2d');
+        const W = 72, H = 72, cx = 36, cy = 36, r = 30;
+
+        g.clearRect(0, 0, W, H);
+
+        if (type === 'luna') {
+            // Gradiente gris-azulado
+            const base = g.createRadialGradient(cx - 8, cy - 8, 4, cx, cy, r);
+            base.addColorStop(0, '#e8eaf0');
+            base.addColorStop(0.6, '#9ea3b5');
+            base.addColorStop(1, '#3d3f5a');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = base; g.fill();
+            // Cráter mayor
+            g.fillStyle = 'rgba(50,50,80,0.35)';
+            g.beginPath(); g.arc(cx + 6, cy - 8, 10, 0, Math.PI * 2); g.fill();
+            g.beginPath(); g.arc(cx - 12, cy + 8, 6, 0, Math.PI * 2); g.fill();
+            g.beginPath(); g.arc(cx + 4, cy + 12, 4, 0, Math.PI * 2); g.fill();
+            // Brillo
+            const shine = g.createRadialGradient(cx - 10, cy - 10, 2, cx - 10, cy - 10, 18);
+            shine.addColorStop(0, 'rgba(255,255,255,0.5)');
+            shine.addColorStop(1, 'rgba(255,255,255,0)');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = shine; g.fill();
+
+        } else if (type === 'marte') {
+            const base = g.createRadialGradient(cx - 8, cy - 8, 3, cx, cy, r);
+            base.addColorStop(0, '#ffaa7a');
+            base.addColorStop(0.5, '#c0452a');
+            base.addColorStop(1, '#5a1200');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = base; g.fill();
+            // Cañones (líneas oscuras)
+            g.strokeStyle = 'rgba(80,10,0,0.4)'; g.lineWidth = 2;
+            g.beginPath(); g.moveTo(cx-14, cy-5); g.bezierCurveTo(cx-4, cy-8, cx+8, cy+2, cx+16, cy-3); g.stroke();
+            g.beginPath(); g.moveTo(cx-8, cy+8); g.bezierCurveTo(cx+4, cy+14, cx+12, cy+8, cx+18, cy+12); g.stroke();
+            // Casquete polar
+            g.fillStyle = 'rgba(240,248,255,0.7)';
+            g.beginPath(); g.ellipse(cx, cy - r + 8, 9, 5, 0, 0, Math.PI * 2); g.fill();
+            // Brillo
+            const shine = g.createRadialGradient(cx - 10, cy - 10, 1, cx - 10, cy - 10, 16);
+            shine.addColorStop(0, 'rgba(255,220,200,0.55)');
+            shine.addColorStop(1, 'rgba(255,220,200,0)');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = shine; g.fill();
+
+        } else if (type === 'jupiter') {
+            const base = g.createRadialGradient(cx - 6, cy - 8, 2, cx, cy, r);
+            base.addColorStop(0, '#f5d5a8');
+            base.addColorStop(0.4, '#c8956a');
+            base.addColorStop(1, '#5a2800');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = base; g.fill();
+            // Bandas
+            const bands = [
+                { y: -14, h: 5, c: 'rgba(160,80,30,0.5)' },
+                { y: -6,  h: 4, c: 'rgba(200,130,70,0.4)' },
+                { y: 2,   h: 6, c: 'rgba(140,60,20,0.5)' },
+                { y: 12,  h: 4, c: 'rgba(180,100,40,0.4)' },
+            ];
+            g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.clip();
+            bands.forEach(b => {
+                g.fillStyle = b.c;
+                g.fillRect(cx - r, cy + b.y, r * 2, b.h);
+            });
+            // Gran mancha roja
+            g.fillStyle = 'rgba(200,60,30,0.7)';
+            g.beginPath(); g.ellipse(cx + 4, cy + 2, 9, 5, -0.1, 0, Math.PI * 2); g.fill();
+            g.fillStyle = 'rgba(255,120,80,0.5)';
+            g.beginPath(); g.ellipse(cx + 4, cy + 2, 5, 3, -0.1, 0, Math.PI * 2); g.fill();
+            g.restore();
+            // Brillo
+            const shine = g.createRadialGradient(cx - 10, cy - 10, 1, cx - 10, cy - 10, 18);
+            shine.addColorStop(0, 'rgba(255,240,210,0.4)');
+            shine.addColorStop(1, 'rgba(255,240,210,0)');
+            g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fillStyle = shine; g.fill();
+
+        } else if (type === 'saturno') {
+            // Anillos detrás (parte trasera)
+            g.save();
+            g.beginPath(); g.ellipse(cx, cy + 4, 44, 10, 0, Math.PI, Math.PI * 2);
+            g.fillStyle = 'rgba(200,180,120,0.5)'; g.fill();
+            // Planeta
+            const base = g.createRadialGradient(cx - 7, cy - 7, 3, cx, cy, r - 4);
+            base.addColorStop(0, '#f5e8b0');
+            base.addColorStop(0.5, '#d4a94a');
+            base.addColorStop(1, '#6b4d00');
+            g.beginPath(); g.arc(cx, cy, r - 4, 0, Math.PI * 2); g.fillStyle = base; g.fill();
+            // Bandas sutiles
+            g.beginPath(); g.arc(cx, cy, r - 4, 0, Math.PI * 2); g.clip();
+            [{ y: -8, c: 'rgba(120,80,0,0.35)', h: 4 }, { y: 4, c: 'rgba(100,60,0,0.3)', h: 3 }].forEach(b => {
+                g.fillStyle = b.c;
+                g.fillRect(cx - r, cy + b.y, r * 2, b.h);
+            });
+            g.restore();
+            // Anillos delante
+            g.beginPath(); g.ellipse(cx, cy + 4, 44, 10, 0, 0, Math.PI);
+            g.strokeStyle = 'rgba(240,210,130,0.85)'; g.lineWidth = 6; g.stroke();
+            g.beginPath(); g.ellipse(cx, cy + 4, 36, 8, 0, 0, Math.PI);
+            g.strokeStyle = 'rgba(210,180,100,0.6)'; g.lineWidth = 3; g.stroke();
+            // Brillo
+            const shine = g.createRadialGradient(cx - 8, cy - 8, 1, cx - 8, cy - 8, 14);
+            shine.addColorStop(0, 'rgba(255,248,210,0.5)');
+            shine.addColorStop(1, 'rgba(255,248,210,0)');
+            g.beginPath(); g.arc(cx, cy, r - 4, 0, Math.PI * 2); g.fillStyle = shine; g.fill();
+        }
+    }
+
+    // Render de los 4 planetas mini
+    function renderMiniPlanets() {
+        drawMiniPlanet('p0', 'luna');
+        drawMiniPlanet('p1', 'marte');
+        drawMiniPlanet('p2', 'jupiter');
+        drawMiniPlanet('p3', 'saturno');
+    }
+
+    // ─────────────────────────────────────────────
+    //  JUEGO
+    // ─────────────────────────────────────────────
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    
+    let state = 'MENU';
+    let currentLvlIdx = 0;
+    let unlocked = [true, false, false, false]; 
+
+    const levels = [
+        { name: 'LUNA',    color: '#BDC3C7', goal: 1500, traps: false },
+        { name: 'MARTE',   color: '#E74C3C', goal: 2500, traps: false },
+        { name: 'JÚPITER', color: '#E67E22', goal: 3500, traps: true },
+        { name: 'SATURNO', color: '#F1C40F', goal: 4500, traps: true }
+    ];
+
+    let player = { x: 0, y: 0, w: 22, h: 30, vx: 0, vy: 0, jump: -13 };
+    let platforms = [], stars = [], particles = [];
+    let cameraY = 0, distance = 0, frames = 0, verticalStackCount = 0;
+
+    const specialMessage = "Te amo, eres una niña impresionante e increíble,\nespecial por todo de lo que eres capaz.\n\nTe amo y estoy orgulloso de conocerte ❤️";
+
+    const astroCanvas = document.getElementById('astro-canvas');
+    const aCtx = astroCanvas.getContext('2d');
+
+    function drawPixelAstronaut(jumpOffset = 0) {
+        aCtx.clearRect(0, 0, 120, 160);
+        const px = 49, py = 60 + jumpOffset;
+        aCtx.fillStyle = '#f0f0f0'; aCtx.fillRect(px, py + 8, 22, 38);
+        aCtx.fillStyle = '#eeeeee'; aCtx.beginPath(); aCtx.arc(px + 11, py + 12, 14, 0, Math.PI * 2); aCtx.fill();
+        aCtx.fillStyle = '#1a1a2e'; aCtx.beginPath(); aCtx.arc(px + 11, py + 12, 9, 0, Math.PI * 2); aCtx.fill();
+        aCtx.fillStyle = '#00ddff'; aCtx.beginPath(); aCtx.arc(px + 9, py + 10, 6, 0, Math.PI * 2); aCtx.fill();
+        aCtx.fillStyle = '#f0f0f0'; aCtx.fillRect(px - 6, py + 15, 8, 18); aCtx.fillRect(px + 20, py + 15, 8, 18);
+        aCtx.fillStyle = '#222233'; aCtx.fillRect(px + 3, py + 42, 7, 18); aCtx.fillRect(px + 13, py + 42, 7, 18);
+        aCtx.fillStyle = '#444466'; aCtx.fillRect(px + 18, py + 10, 10, 20);
+    }
+
+    function init() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        stars = [];
+        for(let i=0; i<140; i++) {
+            stars.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+                s: Math.random()*2.5, b: Math.random()*0.05, p: Math.random()*10 });
+        }
+    }
+
+    function createDust(x, y) {
+        for(let i=0; i<8; i++) {
+            particles.push({ x, y, vx: (Math.random()-0.5)*4, vy: (Math.random()-0.5)*2,
+                life: 1.0, size: Math.random()*3+1 });
+        }
+    }
+
+    function showLevels() {
+        changeState('LEVELS');
+        for(let i=1; i<4; i++) {
+            if(unlocked[i]) document.getElementById('card-'+i).classList.remove('locked');
+        }
+        document.getElementById('special-btn').style.display = unlocked[3] ? 'block' : 'none';
+        renderMiniPlanets();
+    }
+
+    function showSpecialMessage() {
+        changeState('SPECIAL_WIN');
+        typeMessage();
+        let offset = 0, direction = -1;
+        const jumpInterval = setInterval(() => {
+            offset += direction * 12;
+            if(offset <= -28 || offset >= 4) direction *= -1;
+            drawPixelAstronaut(offset);
+        }, 180);
+        setTimeout(() => clearInterval(jumpInterval), 8000);
+    }
+
+    function typeMessage() {
+        const el = document.getElementById('special-win');
+        el.innerHTML = ''; let i = 0;
+        const interval = setInterval(() => {
+            if(i < specialMessage.length) {
+                el.innerHTML += specialMessage.charAt(i) === '\n' ? '<br>' : specialMessage.charAt(i);
+                i++;
+            } else clearInterval(interval);
+        }, 45);
+    }
+
+    function selectLevel(idx) {
+        if(!unlocked[idx]) return;
+        currentLvlIdx = idx;
+        resetGame();
+        changeState('GAME');
+    }
+
+    function changeState(s) {
+        state = s;
+        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+        if(s === 'MENU')         document.getElementById('ui-menu').classList.remove('hidden');
+        if(s === 'LEVELS')       document.getElementById('ui-levels').classList.remove('hidden');
+        if(s === 'POETRY')       document.getElementById('ui-poetry').classList.remove('hidden');
+        if(s === 'WIN')          document.getElementById('ui-win').classList.remove('hidden');
+        if(s === 'SPECIAL_WIN')  document.getElementById('ui-special-win').classList.remove('hidden');
+    }
+
+    function resetGame() {
+        player.x = canvas.width / 2 - 11; player.y = canvas.height - 150;
+        player.vx = 0; player.vy = 0;
+        cameraY = 0; distance = 0; platforms = []; particles = []; verticalStackCount = 0;
+        platforms.push(createAsteroidData(player.x, player.y + 40, 45, 'real'));
+        for(let i=0; i<15; i++) spawnPlatformSet();
+    }
+
+    function changeState(s) {
+    state = s;
+    // Oculta todas las pantallas
+    document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+    
+    // Busca el ID: ui-menu, ui-levels, ui-poetry o ui-data
+    const id = `ui-${s.toLowerCase()}`; 
+    const target = document.getElementById(id);
+    
+    if (target) {
+        target.classList.remove('hidden');
+    } else {
+        console.error("No se encontró la pantalla:", id);
+    }
+}
+
+    function createAsteroidData(x, y, r, type) {
+        const vertices = [];
+        const numSides = 8 + Math.floor(Math.random()*6);
+        for(let i=0; i<numSides; i++) {
+            const angle = (i/numSides)*Math.PI*2;
+            const dist = r*(0.8+Math.random()*0.4);
+            vertices.push({ x: Math.cos(angle)*dist, y: Math.sin(angle)*dist });
+        }
+        const spots = [];
+        const numSpots = 2 + Math.floor(Math.random()*5);
+        for(let i=0; i<numSpots; i++) spots.push({
+            x: (Math.random()-0.5)*r, y: (Math.random()-0.5)*r, size: Math.random()*(r/3)
+        });
+        return { x, y, r, vertices, spots, rot: Math.random()*Math.PI,
+            rotSpeed: (Math.random()-0.5)*0.03, type };
+    }
+
+    function spawnPlatformSet() {
+        const lastReal = platforms.filter(p => p.type==='real').pop();
+        let nextY = lastReal.y - (110 + Math.random()*40);
+        let offsetX = (Math.random()*260 - 130);
+        if(Math.abs(offsetX) < 40) verticalStackCount++;
+        else verticalStackCount = 0;
+        if(verticalStackCount >= 2) { offsetX = offsetX > 0 ? 140 : -140; verticalStackCount = 0; }
+        let nextX = lastReal.x + offsetX;
+        if(nextX < 50) nextX = 50 + Math.random()*50;
+        if(nextX > canvas.width-50) nextX = canvas.width-50-Math.random()*50;
+        platforms.push(createAsteroidData(nextX, nextY, 35+Math.random()*10, 'real'));
+        if(levels[currentLvlIdx].traps && Math.random() > 0.4) {
+            let trapY = nextY + (Math.random()*60-30);
+            let trapX = Math.random()*(canvas.width-100)+50;
+            if(Math.abs(trapX-nextX) > 80) platforms.push(createAsteroidData(trapX, trapY, 38, 'trap'));
+        }
+    }
+
+    let touchX = null;
+    window.addEventListener('touchstart', e => touchX = e.touches[0].clientX);
+    window.addEventListener('touchend', () => touchX = null);
+    window.addEventListener('mousedown', e => touchX = e.clientX);
+    window.addEventListener('mouseup', () => touchX = null);
+
+    function update() {
+        if(state !== 'GAME') return;
+        frames++;
+        if(touchX !== null) player.vx = (touchX < canvas.width/2) ? -6 : 6;
+        else player.vx *= 0.85;
+        player.x += player.vx; player.vy += 0.5; player.y += player.vy;
+        if(player.x < -20) player.x = canvas.width;
+        if(player.x > canvas.width) player.x = -20;
+        if(player.y < canvas.height/2 + cameraY) cameraY = player.y - canvas.height/2;
+        if(player.vy > 0) {
+            platforms.forEach(p => {
+                if(p.type==='real' &&
+                   player.x+player.w > p.x-p.r && player.x < p.x+p.r &&
+                   player.y+player.h > p.y-15 && player.y+player.h < p.y+10) {
+                    player.vy = player.jump;
+                    createDust(player.x+player.w/2, player.y+player.h);
+                    distance = Math.max(distance, Math.abs(Math.floor(player.y-(canvas.height-150))));
+                }
+            });
+        }
+        for(let i=particles.length-1; i>=0; i--) {
+            let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.life-=0.03;
+            if(p.life<=0) particles.splice(i,1);
+        }
+        if(platforms[platforms.length-1].y > cameraY-100) spawnPlatformSet();
+        if(platforms[0].y > cameraY+canvas.height+50) platforms.shift();
+        if(player.y > cameraY+canvas.height) resetGame();
+        if(distance > levels[currentLvlIdx].goal+200) {
+            if(currentLvlIdx < 3) unlocked[currentLvlIdx+1] = true;
+            if(currentLvlIdx === 3) showSpecialMessage();
+            else changeState('WIN');
+        }
+    }
+
+    function drawAsteroid(p) {
+        ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+        ctx.beginPath();
+        ctx.moveTo(p.vertices[0].x, p.vertices[0].y);
+        for(let i=1; i<p.vertices.length; i++) ctx.lineTo(p.vertices[i].x, p.vertices[i].y);
+        ctx.closePath();
+        if(p.type==='real') { ctx.fillStyle='#5a5a5a'; ctx.strokeStyle='#888'; }
+        else { ctx.fillStyle='#1a1d23'; ctx.strokeStyle='#2c3e50'; }
+        ctx.lineWidth=2; ctx.fill(); ctx.stroke();
+        p.spots.forEach(s => {
+            ctx.beginPath(); ctx.arc(s.x,s.y,s.size,0,Math.PI*2);
+            ctx.fillStyle=(p.type==='real')?'rgba(0,0,0,0.2)':'rgba(0,0,0,0.5)'; ctx.fill();
+        });
+        ctx.restore();
+    }
+
+    // ─── Planeta grande in-game (con gradientes y detalles) ───
+    function drawPlanet() {
+        const goalY = (canvas.height-150) - levels[currentLvlIdx].goal - 500;
+        const cx = canvas.width/2;
+        const R = 280;
+        const g = ctx;
+
+        if(currentLvlIdx === 0) { // Luna
+            const grad = g.createRadialGradient(cx-60, goalY-60, 20, cx, goalY, R);
+            grad.addColorStop(0,'#e8eaf0'); grad.addColorStop(0.5,'#9ea3b5'); grad.addColorStop(1,'#3a3d55');
+            g.beginPath(); g.arc(cx, goalY, R, 0, Math.PI*2); g.fillStyle=grad; g.fill();
+            g.fillStyle='rgba(50,50,80,0.3)';
+            [[cx+60,goalY-80,60],[cx-90,goalY+60,40],[cx+40,goalY+110,30],[cx-20,goalY-140,20]].forEach(([x,y,r2])=>{
+                g.beginPath(); g.arc(x,y,r2,0,Math.PI*2); g.fill();
+            });
+        } else if(currentLvlIdx === 1) { // Marte
+            const grad = g.createRadialGradient(cx-60, goalY-60, 20, cx, goalY, R);
+            grad.addColorStop(0,'#ff9970'); grad.addColorStop(0.4,'#c0452a'); grad.addColorStop(1,'#5a1200');
+            g.beginPath(); g.arc(cx, goalY, R, 0, Math.PI*2); g.fillStyle=grad; g.fill();
+            g.save(); g.beginPath(); g.arc(cx,goalY,R,0,Math.PI*2); g.clip();
+            g.strokeStyle='rgba(80,10,0,0.3)'; g.lineWidth=12;
+            g.beginPath(); g.moveTo(cx-200,goalY-40); g.bezierCurveTo(cx-50,goalY-80,cx+80,goalY+20,cx+220,goalY-30); g.stroke();
+            g.beginPath(); g.moveTo(cx-160,goalY+80); g.bezierCurveTo(cx+20,goalY+120,cx+140,goalY+60,cx+240,goalY+100); g.stroke();
+            g.restore();
+            g.fillStyle='rgba(230,245,255,0.7)';
+            g.beginPath(); g.ellipse(cx, goalY-R+22, 50, 25, 0, 0, Math.PI*2); g.fill();
+        } else if(currentLvlIdx === 2) { // Júpiter
+            const grad = g.createRadialGradient(cx-70, goalY-60, 15, cx, goalY, R);
+            grad.addColorStop(0,'#f5d5a8'); grad.addColorStop(0.4,'#c8956a'); grad.addColorStop(1,'#5a2800');
+            g.beginPath(); g.arc(cx, goalY, R, 0, Math.PI*2); g.fillStyle=grad; g.fill();
+            g.save(); g.beginPath(); g.arc(cx,goalY,R,0,Math.PI*2); g.clip();
+            [[-90,28,'rgba(160,80,30,0.5)'],[-55,20,'rgba(210,140,80,0.35)'],[-10,30,'rgba(140,60,20,0.5)'],
+             [45,22,'rgba(180,100,40,0.4)'],[90,18,'rgba(160,80,30,0.4)']].forEach(([dy,h,c])=>{
+                g.fillStyle=c; g.fillRect(cx-R, goalY+dy, R*2, h);
+            });
+            // Gran mancha roja
+            g.fillStyle='rgba(200,60,30,0.75)';
+            g.beginPath(); g.ellipse(cx+30,goalY+20,80,45,-0.1,0,Math.PI*2); g.fill();
+            g.fillStyle='rgba(255,120,80,0.5)';
+            g.beginPath(); g.ellipse(cx+30,goalY+20,45,28,-0.1,0,Math.PI*2); g.fill();
+            g.restore();
+        } else { // Saturno
+            // Anillos traseros
+            g.beginPath(); g.ellipse(cx, goalY+30, R+200, 60, 0, Math.PI, Math.PI*2);
+            g.fillStyle='rgba(200,175,110,0.45)'; g.fill();
+            g.beginPath(); g.ellipse(cx, goalY+30, R+140, 42, 0, Math.PI, Math.PI*2);
+            g.fillStyle='rgba(230,200,130,0.35)'; g.fill();
+            // Planeta
+            const grad = g.createRadialGradient(cx-70, goalY-60, 15, cx, goalY, R-30);
+            grad.addColorStop(0,'#f5e8b0'); grad.addColorStop(0.5,'#d4a94a'); grad.addColorStop(1,'#6b4d00');
+            g.beginPath(); g.arc(cx, goalY, R-30, 0, Math.PI*2); g.fillStyle=grad; g.fill();
+            g.save(); g.beginPath(); g.arc(cx,goalY,R-30,0,Math.PI*2); g.clip();
+            [[-60,18,'rgba(120,80,0,0.3)'],[-25,14,'rgba(100,60,0,0.25)'],[20,16,'rgba(120,80,0,0.3)']].forEach(([dy,h,c])=>{
+                g.fillStyle=c; g.fillRect(cx-(R-30), goalY+dy, (R-30)*2, h);
+            });
+            g.restore();
+            // Anillos delante
+            g.strokeStyle='rgba(240,210,130,0.9)'; g.lineWidth=28;
+            g.beginPath(); g.ellipse(cx, goalY+30, R+200, 60, 0, 0, Math.PI); g.stroke();
+            g.strokeStyle='rgba(210,180,100,0.7)'; g.lineWidth=16;
+            g.beginPath(); g.ellipse(cx, goalY+30, R+140, 42, 0, 0, Math.PI); g.stroke();
+            g.strokeStyle='rgba(190,160,80,0.5)'; g.lineWidth=8;
+            g.beginPath(); g.ellipse(cx, goalY+30, R+80, 26, 0, 0, Math.PI); g.stroke();
+        }
+
+        // Brillo general del planeta
+        const shine = ctx.createRadialGradient(cx-R*0.35, goalY-R*0.35, 10, cx, goalY, R);
+        shine.addColorStop(0,'rgba(255,255,255,0.25)'); shine.addColorStop(0.5,'rgba(255,255,255,0)');
+        ctx.beginPath(); ctx.arc(cx, goalY, (currentLvlIdx===3?R-30:R), 0, Math.PI*2);
+        ctx.fillStyle=shine; ctx.fill();
+    }
+
+    function draw() {
+        ctx.fillStyle = '#010103';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+            let flicker = 0.2 + Math.abs(Math.sin(frames * s.b)) * 0.8;
+            ctx.fillStyle = `rgba(255,255,255,${flicker})`;
+            let yPos = state==='GAME' ? (s.y + cameraY*(0.1+s.p*0.05)) % canvas.height : s.y;
+            ctx.fillRect(s.x, yPos, s.s, s.s);
+        });
+
+        if(state === 'GAME') {
+            ctx.save(); ctx.translate(0, -cameraY);
+            if(distance > levels[currentLvlIdx].goal - 1500) drawPlanet();
+            platforms.forEach(p => { p.rot += p.rotSpeed; drawAsteroid(p); });
+            particles.forEach(p => {
+                ctx.fillStyle = `rgba(150,150,150,${p.life})`;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+            // Astronauta
+            ctx.fillStyle = 'white'; ctx.fillRect(player.x, player.y, player.w, player.h);
+            ctx.fillStyle = '#333'; ctx.fillRect(player.x+4, player.y+4, player.w-8, 10);
+            ctx.fillStyle = '#E74C3C'; ctx.fillRect(player.x-4, player.y+12, 4, 14);
+            ctx.restore();
+
+            // HUD
+            ctx.fillStyle = 'rgba(255,255,255,0.7)';
+            ctx.font = "bold 13px 'Courier New'";
+            ctx.fillText(levels[currentLvlIdx].name, 20, 38);
+            // Barra progreso estilizada
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.fillRect(20, 46, 130, 7);
+            ctx.fillStyle = '#39ff87';
+            ctx.fillRect(20, 46, Math.min(130,(distance/levels[currentLvlIdx].goal)*130), 7);
+            // Bordes barra
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 1;
+            ctx.strokeRect(20, 46, 130, 7);
+        }
+
+        requestAnimationFrame(draw);
+        if(state==='GAME') update();
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    draw();
+    // Render inicial de planetas cuando carga
+    setTimeout(renderMiniPlanets, 100);
+</script>
+</body>
+</html>

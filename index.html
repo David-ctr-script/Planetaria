@@ -610,14 +610,21 @@
     }
 
     function changeState(s) {
-        state = s;
-        document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-        if(s === 'MENU')         document.getElementById('ui-menu').classList.remove('hidden');
-        if(s === 'LEVELS')       document.getElementById('ui-levels').classList.remove('hidden');
-        if(s === 'POETRY')       document.getElementById('ui-poetry').classList.remove('hidden');
-        if(s === 'WIN')          document.getElementById('ui-win').classList.remove('hidden');
-        if(s === 'SPECIAL_WIN')  document.getElementById('ui-special-win').classList.remove('hidden');
-    }
+    state = s;
+    document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
+
+    const map = {
+        'MENU':         'ui-menu',
+        'LEVELS':       'ui-levels',
+        'POETRY':       'ui-poetry',
+        'DATA':         'ui-data',
+        'WIN':          'ui-win',
+        'SPECIAL_WIN':  'ui-special-win'
+    };
+
+    const target = document.getElementById(map[s]);
+    if (target) target.classList.remove('hidden');
+}
 
     function resetGame() {
         player.x = canvas.width / 2 - 11; player.y = canvas.height - 150;
@@ -627,21 +634,6 @@
         for(let i=0; i<15; i++) spawnPlatformSet();
     }
 
-    function changeState(s) {
-    state = s;
-    // Oculta todas las pantallas
-    document.querySelectorAll('.overlay').forEach(el => el.classList.add('hidden'));
-    
-    // Busca el ID: ui-menu, ui-levels, ui-poetry o ui-data
-    const id = `ui-${s.toLowerCase()}`; 
-    const target = document.getElementById(id);
-    
-    if (target) {
-        target.classList.remove('hidden');
-    } else {
-        console.error("No se encontró la pantalla:", id);
-    }
-}
 
     function createAsteroidData(x, y, r, type) {
         const vertices = [];
